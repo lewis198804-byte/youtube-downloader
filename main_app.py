@@ -1,7 +1,17 @@
 from pytubefix import YouTube
+from flask import Flask
 import tkinter as tk
 from tkinter import ttk
 import threading
+
+app = Flask(__name__)
+
+@app.route('/')
+
+def index():
+    return "Youtube video downloader here!"
+
+app.run(host="0.0.0.0", port=5000)
 
 root = tk.Tk()
 title_text = tk.StringVar()
