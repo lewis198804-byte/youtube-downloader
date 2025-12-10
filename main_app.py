@@ -1,17 +1,23 @@
 from pytubefix import YouTube
-from flask import Flask
+from flask import Flask, render_template, request, jsonify
 import tkinter as tk
 from tkinter import ttk
 import threading
 
 app = Flask(__name__)
-
 @app.route('/')
-
 def index():
-    return "Youtube video downloader here!"
+    return render_template('index.html')
 
-app.run(host="0.0.0.0", port=5000)
+@app.route('/grab_detail', methods=['POST'])
+def download():
+    data = request.json
+    url = data['url']
+    # Your pytubefix code here
+    return jsonify({'message': f'Downloading {url}...'})
+
+if __name__ == '__main__':
+    app.run(debug=True, host='0.0.0.0',port=5000)
 
 root = tk.Tk()
 title_text = tk.StringVar()
