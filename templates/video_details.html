@@ -7,9 +7,10 @@
 <body>
     <h1>YouTube Downloader</h1>
     <p>{{video_author}}</p>
+    <p>{{video_title}}</p>
 
-    <form action="/grab_detail" method="post">
-        <input type="text" name="url" placeholder="Paste YouTube URL" required>
+    <form action="/download" method="post">
+      
         <button type="submit">Download</button>
     </form>
 
