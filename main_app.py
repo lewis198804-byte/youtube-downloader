@@ -22,7 +22,7 @@ def index():
     if table_check.fetchone() is None:
         cur.execute('CREATE TABLE videos (title, video_id, channel, download_date) ')
     else:
-        cur.execute('SELECT channel, title, download_date FROM videos')
+        cur.execute('SELECT channel, title, download_date, video_id FROM videos')
        
         res = cur.fetchall()
         print(res)
@@ -80,6 +80,11 @@ def download_vid():
         con.close()
         return render_template('download.html',sucess_text='Video downloaded')
 
+@app.route('/delete', methods=['POST'])
+def delete_vid():
+    selected = request.form
+    print(selected)
+    return render_template('delete.html',delete_text= selected)
 
 def on_complete(stream, file_path):
     global current_title
