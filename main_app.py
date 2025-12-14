@@ -16,15 +16,17 @@ app = Flask(__name__)
 @app.route('/')
 def index():
     con = sqlite3.connect('database.db')
+    con.row_factory = sqlite3.Row
     cur = con.cursor()
     table_check = cur.execute('SELECT name FROM sqlite_master WHERE name="videos"')
     if table_check.fetchone() is None:
         cur.execute('CREATE TABLE videos (title, video_id, channel, download_date) ')
     else:
-        cur.execute('SELECT channel FROM videos')
+        cur.execute('SELECT channel, title, download_date FROM videos')
+       
         res = cur.fetchall()
         print(res)
-    return render_template('index.html')
+    return render_template('index.html', db_vids=res)
 
 
 

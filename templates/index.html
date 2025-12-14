@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <title>YouTube Downloader</title>
 </head>
+
 <body>
     <h1>YouTube Downloader</h1>
 
@@ -11,6 +12,20 @@
         <input type="text" name="url" placeholder="Paste YouTube URL" required>
         <button type="submit">Grab Details</button>
     </form>
+    <table style="border: 1px solid black;table-layout: fixed;width:600px;margin-top:100px;">
+        <tr>
+            <td>Channel</td>
+            <td>Title</td>
+            <td>Download Date</td>
+        </tr>
+        {% for row in db_vids %}
+        <tr>
+            <td>{{row['channel']}}</td>
+            <td>{{row['title']}}</td>
+            <td>{{row['download_date']}}</td>
+        </tr>
+        {% endfor %}
+    </table>
 
 </body>
 </html>
