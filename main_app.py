@@ -76,23 +76,28 @@ def download_vid():
 
 @app.route('/delete', methods=['POST'])
 def delete_vid():
-    con = sqlite3.connect('database.db')
-    con.row_factory = sqlite3.Row
-    cur = con.cursor()
-    selected = request.form
-    delete_list = []
-    for video in selected:
-        cur.execute('SELECT title,channel FROM videos WHERE video_id = ?', (video,))
-        vid_ref = cur.fetchone()
-        delete_list.append(vid_ref['title'])
-        delete_count = len(delete_list)
-        video_address = vid_ref['channel'] + "/"+ vid_ref['title']+".mp4"
-        os.remove(save_path+video_address)
-        cur.execute('DELETE FROM videos WHERE video_id = ?', (video,))
-        con.commit()
-    
-    con.close()
-    return render_template('delete.html',number = delete_count,delete_text= delete_list)
+    if len(request.form) > 0:
+
+        con = sqlite3.connect('database.db')
+        con.row_factory = sqlite3.Row
+        cur = con.cursor()
+        selected = request.form
+        delete_list = []
+        for video in selected:
+            cur.execute('SELECT title,channel FROM videos WHERE video_id = ?', (video,))
+            vid_ref = cur.fetchone()
+            delete_list.append(vid_ref['title'])
+            delete_count = len(delete_list)
+            video_address = vid_ref['channel'] + "/"+ vid_ref['title']+".mp4"
+            os.remove(save_path+video_address)
+            cur.execute('DELETE FROM videos WHERE video_id = ?', (video,))
+            con.commit()
+        
+        con.close()
+        return render_template('delete.html',number = delete_count,delete_text= delete_list)
+    else:
+        print('uh uh')
+        return render_template('error.html',error_text='no videos selected to delete')
 
 def on_complete(stream, file_path):
     global current_title
