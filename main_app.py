@@ -1,13 +1,13 @@
 from pytubefix import YouTube
 from flask import Flask, render_template, request, jsonify
 import sqlite3
-
+import os
 import threading
 
 
 
 current_url = ''
-
+save_path = "/home/lewis/Downloads/youtube_videos/"
 app = Flask(__name__)
 
 
@@ -61,13 +61,7 @@ def download_vid():
     cur = con.cursor()
     yt = YouTube(current_url,on_complete_callback=on_complete)
     stream = yt.streams.get_highest_resolution()
-    save_path = "/home/lewis/Downloads/youtube_videos/"
-    """  if audio_option.get() == 0:
-        stream = yt.streams.get_highest_resolution()
-        save_path = "/home/lewis/Downloads/youtube_videos/"
-    else:
-        stream = yt.streams.get_audio_only()
-        save_path = "/home/lewis/Downloads/youtube_audio/" """
+    
     try:
         stream.download(output_path=save_path+yt.author)
     except:
@@ -82,9 +76,23 @@ def download_vid():
 
 @app.route('/delete', methods=['POST'])
 def delete_vid():
+    con = sqlite3.connect('database.db')
+    con.row_factory = sqlite3.Row
+    cur = con.cursor()
     selected = request.form
-    print(selected)
-    return render_template('delete.html',delete_text= selected)
+    delete_list = []
+    for video in selected:
+        cur.execute('SELECT title,channel FROM videos WHERE video_id = ?', (video,))
+        vid_ref = cur.fetchone()
+        delete_list.append(vid_ref['title'])
+        delete_count = len(delete_list)
+        video_address = vid_ref['channel'] + "/"+ vid_ref['title']+".mp4"
+        os.remove(save_path+video_address)
+        cur.execute('DELETE FROM videos WHERE video_id = ?', (video,))
+        con.commit()
+    
+    con.close()
+    return render_template('delete.html',number = delete_count,delete_text= delete_list)
 
 def on_complete(stream, file_path):
     global current_title

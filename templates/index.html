@@ -25,7 +25,7 @@
                 <td>{{row['channel']}}</td>
                 <td>{{row['title']}}</td>
                 <td>{{row['download_date']}}</td>
-                <td><input type="checkbox" name="delete_checkbox_{{row['video_id']}}" value= "{{row['video_id']}}"> </td>
+                <td><input type="checkbox" name="{{row['video_id']}}"> </td>
             </tr>
             {% endfor %}
         </table>
