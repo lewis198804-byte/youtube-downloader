@@ -3,7 +3,7 @@ from flask import Flask, render_template, request, jsonify
 import sqlite3
 import os
 import threading
-
+from datetime import timedelta , datetime
 
 
 current_url = ''
@@ -20,9 +20,9 @@ def index():
     cur = con.cursor()
     table_check = cur.execute('SELECT name FROM sqlite_master WHERE name="videos"')
     if table_check.fetchone() is None:
-        cur.execute('CREATE TABLE videos (title, video_id, channel, download_date) ')
+        cur.execute('CREATE TABLE videos (title, video_id, channel, download_date,category,file_path,length) ')
     else:
-        cur.execute('SELECT channel, title, download_date, video_id FROM videos')
+        cur.execute('SELECT * FROM videos ORDER BY channel ASC')
        
         res = cur.fetchall()
         print(res)
@@ -39,7 +39,8 @@ def grab_deets():
             yt = YouTube(url)
             author = (yt.author)
             vid_title = yt.title
-            print(yt.length)       
+            video_seconds = yt.length
+            vid_length = timedelta(seconds=video_seconds)    
         except:
             error_tex = 'An exception occurred'
             return render_template('error.html',error_text=error_tex)
@@ -51,29 +52,42 @@ def grab_deets():
             for s in streams:
                 print(s.resolution, s.mime_type)
             return render_template('video_details.html',video_author=author, 
-                               video_title = vid_title,video_url=url)
+                               video_title = vid_title,video_url=url,video_length=vid_length)
     else:
         return render_template('error.html',error_text='No url entered')
 
 @app.route('/download', methods=['POST'])
 def download_vid():
-    if "audio_only" in request.form:
-        print("yes")
-    else:
-        print("no")
+    global save_path
+   
     con = sqlite3.connect('database.db')
     cur = con.cursor()
     yt = YouTube(current_url,on_complete_callback=on_complete)
-    stream = yt.streams.get_highest_resolution()
+    video_seconds = yt.length
+    video_length = timedelta(seconds=video_seconds)
+    
+    if "audio_only" in request.form:
+        save_path = "/home/lewis/Downloads/youtube_audio/"+yt.author
+        stream = yt.streams.get_audio_only()
+        category = "audio"
+        file_path = save_path+'/'+yt.title+'.m4a'
+    else:
+        save_path = "/home/lewis/Downloads/youtube_video/"+yt.author
+        stream = yt.streams.get_highest_resolution()
+        category = "video"
+        file_path = save_path+'/'+yt.title+'.mp4'
+    
     
     try:
-        stream.download(output_path=save_path+yt.author)
+        stream.download(output_path=save_path)
     except:
-        return render_template('error.html',error_text='Couldn\'t downlaod video')
+        return render_template('error.html',error_text='Couldn\'t download video')
     else:
+        download_date = datetime.now()
+        download_date = download_date.strftime('%d-%b-%y')
         cur.execute(
-            'INSERT INTO videos (title, video_id, channel, download_date) VALUES (?,?,?,"test date")', 
-            (yt.title,yt.video_id,yt.author))
+            'INSERT INTO videos (title, video_id, channel, download_date,category,file_path,length) VALUES (?,?,?,?,?,?,?)', 
+            (yt.title,yt.video_id,yt.author,download_date,category,file_path,str(video_length)))
         con.commit()
         con.close()
         return render_template('download.html',sucess_text='Video downloaded')
@@ -88,21 +102,21 @@ def delete_vid():
         selected = request.form
         delete_list = []
         for video in selected:
-            cur.execute('SELECT title,channel FROM videos WHERE video_id = ?', (video,))
+            cur.execute('SELECT title,channel,category, file_path FROM videos WHERE video_id = ?', (video,))
             vid_ref = cur.fetchone()
             delete_list.append(vid_ref['title'])
             delete_count = len(delete_list)
-            video_address = vid_ref['channel'] + "/"+ vid_ref['title']+".mp4"
-            if os.path.exists(save_path+video_address):
-                os.remove(save_path+video_address)
-                if len(os.listdir(save_path+vid_ref['channel'])) == 0:
-                    os.rmdir(save_path+vid_ref['channel'])
-
+            
+            if os.path.exists(vid_ref['file_path']):
+                os.remove(vid_ref['file_path'])
+                cur.execute('DELETE FROM videos WHERE video_id = ? AND category = ?', (video,vid_ref['category']))
+                con.commit()
+                
+                file_dir = os.path.dirname(vid_ref['file_path'])
+                if len(os.listdir(file_dir)) == 0:
+                    os.rmdir(file_dir)
             else:
-                print("file not found")
-            cur.execute('DELETE FROM videos WHERE video_id = ?', (video,))
-            con.commit()
-        
+                print("file not found: ", vid_ref['file_path'])
         con.close()
         return render_template('delete.html',number = delete_count,delete_text= delete_list)
     else:

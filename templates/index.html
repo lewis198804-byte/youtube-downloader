@@ -2,43 +2,65 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>YouTube Downloader</title>
+    <title>Video Downloader</title>
 
+    <!-- Bootstrap CSS -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    >
 </head>
 
 <body>
-    <header>
-        <h1>YouTube Downloader</h1>
+     <header class="bg-dark text-white py-3 mb-4">
+        <div class="container text-center">
+            <h1 class="h1 mb-0">Video Downloader</h1>
+        </div>
     </header>
     <main>
         <section>
-            <form action="/grab_detail" method="post">
+            <form action="/grab_detail" method="post" class="card p-3 text-center">
                 <p><input type="text" name="url" placeholder="Paste YouTube URL" required></p>
                 
-                <p><button type="submit">Grab Details</button></p>
+                <p><button type="submit">Grab Video Details</button></p>
             </form>
         </section>
         <section>
-            <form  action="/delete" method="post">
-                <table style="border: 1px solid black;table-layout: fixed;width:600px;margin-top:100px;">
-                    <tr>
-                        <th>Channel</th>
-                        <th>Title</th>
-                        <th>Download Date</th>
-                        <th>Delete?</th>
-                    </tr>
-                    {% for row in db_vids %}
-                    <tr>
-                        <td>{{row['channel']}}</td>
-                        <td>{{row['title']}}</td>
-                        <td>{{row['download_date']}}</td>
-                        <td><input type="checkbox" name="{{row['video_id']}}"> </td>
-                    </tr>
-                    {% endfor %}
-                </table>
-                <button>Submit</button>
+            
+            <form  action="/delete" method="post" class="card p-3 text-center">
+                
+                <div class="table-responsive">
+                    <h1 class="h3 mb-0">Downloads</h1>
+                    <table  class="table table-hover table-bordered" style="margin-top:50px;">
+                        <thead>
+                            <tr>
+                                <th scope="col">Channel</th>
+                                <th scope="col">Title</th>
+                                <th scope="col">Category</th>
+                                <th scope="col">Download Date</th>
+                                <th scope="col">Length</th>
+                                <th scope="col">Delete?</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in db_vids %}
+                            <tr>
+                                <td>{{row['channel']}}</td>
+                                <td>{{row['title']}}</td>
+                                <td>{{row['category']}}</td>
+                                <td>{{row['download_date']}}</td>
+                                <td>{{row['length']}}</td>
+                                <td><input type="checkbox" name="{{row['video_id']}}"> </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <p><button>Delete Selected</button></p>
             </form>
         </section>
     </main>
+    <!-- Bootstrap JS (optional, for components like modals, dropdowns) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
