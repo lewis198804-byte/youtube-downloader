@@ -3,33 +3,42 @@
 <head>
     <meta charset="UTF-8">
     <title>YouTube Downloader</title>
+
 </head>
 
 <body>
-    <h1>YouTube Downloader</h1>
-
-    <form action="/grab_detail" method="post">
-        <input type="text" name="url" placeholder="Paste YouTube URL" required>
-        <button type="submit">Grab Details</button>
-    </form>
-    <form  action="/delete" method="post">
-        <table style="border: 1px solid black;table-layout: fixed;width:600px;margin-top:100px;">
-            <tr>
-                <td>Channel</td>
-                <td>Title</td>
-                <td>Download Date</td>
-                <td>Delete?</td>
-            </tr>
-            {% for row in db_vids %}
-            <tr>
-                <td>{{row['channel']}}</td>
-                <td>{{row['title']}}</td>
-                <td>{{row['download_date']}}</td>
-                <td><input type="checkbox" name="{{row['video_id']}}"> </td>
-            </tr>
-            {% endfor %}
-        </table>
-        <button>Submit</button>
-    </form>
+    <header>
+        <h1>YouTube Downloader</h1>
+    </header>
+    <main>
+        <section>
+            <form action="/grab_detail" method="post">
+                <p><input type="text" name="url" placeholder="Paste YouTube URL" required></p>
+                
+                <p><button type="submit">Grab Details</button></p>
+            </form>
+        </section>
+        <section>
+            <form  action="/delete" method="post">
+                <table style="border: 1px solid black;table-layout: fixed;width:600px;margin-top:100px;">
+                    <tr>
+                        <th>Channel</th>
+                        <th>Title</th>
+                        <th>Download Date</th>
+                        <th>Delete?</th>
+                    </tr>
+                    {% for row in db_vids %}
+                    <tr>
+                        <td>{{row['channel']}}</td>
+                        <td>{{row['title']}}</td>
+                        <td>{{row['download_date']}}</td>
+                        <td><input type="checkbox" name="{{row['video_id']}}"> </td>
+                    </tr>
+                    {% endfor %}
+                </table>
+                <button>Submit</button>
+            </form>
+        </section>
+    </main>
 </body>
 </html>

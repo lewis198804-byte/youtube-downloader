@@ -11,7 +11,7 @@ save_path = "/home/lewis/Downloads/youtube_videos/"
 app = Flask(__name__)
 
 
-
+# known issues : if the same video is downloaded more than once, only one file but multiple databse entries
 
 @app.route('/')
 def index():
@@ -57,6 +57,10 @@ def grab_deets():
 
 @app.route('/download', methods=['POST'])
 def download_vid():
+    if "audio_only" in request.form:
+        print("yes")
+    else:
+        print("no")
     con = sqlite3.connect('database.db')
     cur = con.cursor()
     yt = YouTube(current_url,on_complete_callback=on_complete)
@@ -89,7 +93,13 @@ def delete_vid():
             delete_list.append(vid_ref['title'])
             delete_count = len(delete_list)
             video_address = vid_ref['channel'] + "/"+ vid_ref['title']+".mp4"
-            os.remove(save_path+video_address)
+            if os.path.exists(save_path+video_address):
+                os.remove(save_path+video_address)
+                if len(os.listdir(save_path+vid_ref['channel'])) == 0:
+                    os.rmdir(save_path+vid_ref['channel'])
+
+            else:
+                print("file not found")
             cur.execute('DELETE FROM videos WHERE video_id = ?', (video,))
             con.commit()
         
@@ -102,12 +112,7 @@ def delete_vid():
 def on_complete(stream, file_path):
     global current_title
     print(f"\n√ Done downloading: {file_path}")
-    """ if audio_option.get() == 0:
-        download_type = 'Video'
-    else:
-        download_type = 'Audio'
-    current_title = ''
- """
+    
   
     
 if __name__ == '__main__':
