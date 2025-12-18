@@ -20,12 +20,13 @@ def index():
     cur = con.cursor()
     table_check = cur.execute('SELECT name FROM sqlite_master WHERE name="videos"')
     if table_check.fetchone() is None:
-        cur.execute('CREATE TABLE videos (title, video_id, channel, download_date,category,file_path,length) ')
+        cur.execute('CREATE TABLE videos (title, video_id, channel, download_date,category,file_path,length,file_size) ')
     else:
         cur.execute('SELECT * FROM videos ORDER BY channel ASC')
        
         res = cur.fetchall()
         print(res)
+        
     return render_template('index.html', db_vids=res)
 
 
@@ -85,9 +86,15 @@ def download_vid():
     else:
         download_date = datetime.now()
         download_date = download_date.strftime('%d-%b-%y')
+        file_size_bytes = os.path.getsize(file_path)
+        if file_size_bytes < 1000000000 :
+            size = str(round(file_size_bytes / (1024 * 1024))) + "MB"
+        else:
+            size = str(round(file_size_bytes / (1024 ** 3))) + "GB"
+        
         cur.execute(
-            'INSERT INTO videos (title, video_id, channel, download_date,category,file_path,length) VALUES (?,?,?,?,?,?,?)', 
-            (yt.title,yt.video_id,yt.author,download_date,category,file_path,str(video_length)))
+            'INSERT INTO videos (title, video_id, channel, download_date,category,file_path,length,file_size) VALUES (?,?,?,?,?,?,?,?)', 
+            (yt.title,yt.video_id,yt.author,download_date,category,file_path,str(video_length),size))
         con.commit()
         con.close()
         return render_template('download.html',sucess_text='Video downloaded')
@@ -122,6 +129,16 @@ def delete_vid():
     else:
         print('uh uh')
         return render_template('error.html',error_text='no videos selected to delete')
+
+@app.route('/player/<video_id>')
+def player(video_id):
+    con = sqlite3.connect('database.db')
+    con.row_factory = sqlite3.Row
+    cur = con.cursor()
+    cur.execute("SELECT file_path FROM videos WHERE video_id = ?", (video_id,))
+    res = cur.fetchone()
+    video = res['file_path']
+    return render_template('player.html',video_path=video)
 
 def on_complete(stream, file_path):
     global current_title

@@ -39,6 +39,7 @@
                                 <th scope="col">Category</th>
                                 <th scope="col">Download Date</th>
                                 <th scope="col">Length</th>
+                                <th scope="col">Size</th>
                                 <th scope="col">Delete?</th>
                             </tr>
                         </thead>
@@ -46,10 +47,11 @@
                             {% for row in db_vids %}
                             <tr>
                                 <td>{{row['channel']}}</td>
-                                <td>{{row['title']}}</td>
+                                <td><a href="{{ url_for('player', video_id=row['video_id']) }}">{{row['title']}}</a></td>
                                 <td>{{row['category']}}</td>
                                 <td>{{row['download_date']}}</td>
                                 <td>{{row['length']}}</td>
+                                <td>{{row['file_size']}}</td>
                                 <td><input type="checkbox" name="{{row['video_id']}}"> </td>
                             </tr>
                             {% endfor %}
