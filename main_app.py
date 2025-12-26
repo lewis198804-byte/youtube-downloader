@@ -1,5 +1,5 @@
 from pytubefix import YouTube
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, send_from_directory, send_file
 import sqlite3
 import os
 import threading
@@ -9,8 +9,8 @@ from datetime import timedelta , datetime
 current_url = ''
 save_path = "/home/lewis/Downloads/youtube_videos/"
 app = Flask(__name__)
-
-
+DOWNLOADS_DIR = os.path.join(app.root_path, 'downloads/video')
+print(DOWNLOADS_DIR)
 # known issues : if the same video is downloaded more than once, only one file but multiple databse entries
 
 @app.route('/')
@@ -138,7 +138,8 @@ def player(video_id):
     cur.execute("SELECT file_path FROM videos WHERE video_id = ?", (video_id,))
     res = cur.fetchone()
     video = res['file_path']
-    return render_template('player.html',video_path=video)
+    return send_file(video)
+    return render_template('player.html',video_path= "test")
 
 def on_complete(stream, file_path):
     global current_title
