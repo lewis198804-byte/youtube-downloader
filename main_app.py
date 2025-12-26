@@ -1,5 +1,5 @@
 from pytubefix import YouTube
-from flask import Flask, render_template, request, jsonify, send_from_directory, send_file
+from flask import Flask, render_template, request, send_from_directory, url_for
 import sqlite3
 import os
 import threading
@@ -9,7 +9,7 @@ from datetime import timedelta , datetime
 current_url = ''
 save_path = "/home/lewis/Downloads/youtube_videos/"
 app = Flask(__name__)
-DOWNLOADS_DIR = os.path.join(app.root_path, 'downloads/video')
+DOWNLOADS_DIR = os.path.join(app.root_path, 'downloads')
 print(DOWNLOADS_DIR)
 # known issues : if the same video is downloaded more than once, only one file but multiple databse entries
 
@@ -20,7 +20,7 @@ def index():
     cur = con.cursor()
     table_check = cur.execute('SELECT name FROM sqlite_master WHERE name="videos"')
     if table_check.fetchone() is None:
-        cur.execute('CREATE TABLE videos (title, video_id, channel, download_date,category,file_path,length,file_size) ')
+        cur.execute('CREATE TABLE videos (title, video_id, channel, download_date,category,file_path,length,file_size,progress) ')
     else:
         cur.execute('SELECT * FROM videos ORDER BY channel ASC')
        
@@ -68,12 +68,12 @@ def download_vid():
     video_length = timedelta(seconds=video_seconds)
     
     if "audio_only" in request.form:
-        save_path = "/home/lewis/Downloads/youtube_audio/"+yt.author
+        save_path = DOWNLOADS_DIR+"/audio/"+yt.author
         stream = yt.streams.get_audio_only()
         category = "audio"
         file_path = save_path+'/'+yt.title+'.m4a'
     else:
-        save_path = "/home/lewis/Downloads/youtube_video/"+yt.author
+        save_path = DOWNLOADS_DIR+"/video/"+yt.author
         stream = yt.streams.get_highest_resolution()
         category = "video"
         file_path = save_path+'/'+yt.title+'.mp4'
@@ -130,16 +130,54 @@ def delete_vid():
         print('uh uh')
         return render_template('error.html',error_text='no videos selected to delete')
 
+
+@app.route('/media/<path:subpath>')
+def serve_media(subpath):
+    return send_from_directory(DOWNLOADS_DIR, subpath)
+
+
 @app.route('/player/<video_id>')
 def player(video_id):
     con = sqlite3.connect('database.db')
     con.row_factory = sqlite3.Row
     cur = con.cursor()
-    cur.execute("SELECT file_path FROM videos WHERE video_id = ?", (video_id,))
+    cur.execute("SELECT file_path, title, channel, category FROM videos WHERE video_id = ?", (video_id,))
     res = cur.fetchone()
-    video = res['file_path']
-    return send_file(video)
-    return render_template('player.html',video_path= "test")
+    if res['category'] == "audio":
+        folder = "audio"
+    else:
+        folder = "video"
+
+    con.close()
+    
+    if not res:
+        return "Video not found", 404
+    
+    # Extract relative path from full path (assuming DOWNLOADS_DIR is your base)
+    folder_path = os.path.join(DOWNLOADS_DIR, folder)
+    print("folder path: ",folder_path)
+    rel_path = os.path.relpath(res['file_path'], DOWNLOADS_DIR)
+    print(rel_path)
+    # Generate the URL that points to your serve_media route
+    media_url = url_for('serve_media', subpath=rel_path)
+    
+    return render_template('player.html', 
+                         media_url=media_url,
+                         title=res['title'],
+                         channel=res['channel'],
+                         video_id = video_id)
+
+@app.route("/save_progress/<video_id>", methods=['POST'])
+def save_progress(video_id):
+    data = request.get_json()
+    progress = data['progress']
+    print("saving_progress")
+    con = sqlite3.connect('database.db')
+    con.row_factory = sqlite3.Row
+    cur = con.cursor()
+    cur.execute("UPDATE videos SET progress = ? WHERE video_id = ?", (progress, video_id))
+    con.commit()
+
 
 def on_complete(stream, file_path):
     global current_title
