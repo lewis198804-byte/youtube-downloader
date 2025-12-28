@@ -21,6 +21,7 @@ def index():
     table_check = cur.execute('SELECT name FROM sqlite_master WHERE name="videos"')
     if table_check.fetchone() is None:
         cur.execute('CREATE TABLE videos (title, video_id, channel, download_date,category,file_path,length,file_size,progress) ')
+        cur.execute('CREATE TABLE bookmarks (video_id TEXT, bookmark_time REAL, name TEXT, timestamp DATETIME, PRIMARY KEY (video_id, bookmark_time))')
     else:
         cur.execute('SELECT * FROM videos ORDER BY channel ASC')
        
@@ -141,18 +142,24 @@ def player(video_id):
     con = sqlite3.connect('database.db')
     con.row_factory = sqlite3.Row
     cur = con.cursor()
-    cur.execute("SELECT file_path, title, channel, category FROM videos WHERE video_id = ?", (video_id,))
+    cur.execute("SELECT file_path, title, channel, category, progress FROM videos WHERE video_id = ?", (video_id,))
     res = cur.fetchone()
-    if res['category'] == "audio":
-        folder = "audio"
-    else:
-        folder = "video"
+
 
     con.close()
     
     if not res:
         return "Video not found", 404
     
+    if res['category'] == "audio":
+        folder = "audio"
+    else:
+        folder = "video"
+    if res['progress'] != "":
+        video_position = res['progress']
+    else:
+        video_position = ""
+
     # Extract relative path from full path (assuming DOWNLOADS_DIR is your base)
     folder_path = os.path.join(DOWNLOADS_DIR, folder)
     print("folder path: ",folder_path)
@@ -165,7 +172,8 @@ def player(video_id):
                          media_url=media_url,
                          title=res['title'],
                          channel=res['channel'],
-                         video_id = video_id)
+                         video_id = video_id,
+                         video_pos = video_position)
 
 @app.route("/save_progress/<video_id>", methods=['POST'])
 def save_progress(video_id):
@@ -177,7 +185,22 @@ def save_progress(video_id):
     cur = con.cursor()
     cur.execute("UPDATE videos SET progress = ? WHERE video_id = ?", (progress, video_id))
     con.commit()
+    return "saved"
 
+
+@app.route("/save_bookmark/<video_id>", methods=['POST'])
+def save_bookmark(video_id):
+    data = request.get_json()
+    bookmark_time = data['bookmark']
+    bookmark_name = data['bookmark_name']
+    vid = video_id
+    print("saving_bookmark")
+    con = sqlite3.connect('database.db')
+    con.row_factory = sqlite3.Row
+    cur = con.cursor()
+    cur.execute("INSERT INTO bookmarks (video_id, bookmark_time, name, timestamp) VALUES (?,?,?,?)",(vid, bookmark_time,bookmark_name, datetime.now() ))
+    con.commit()
+    return "saved bookmark"
 
 def on_complete(stream, file_path):
     global current_title
