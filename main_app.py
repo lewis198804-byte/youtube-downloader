@@ -1,5 +1,5 @@
 from pytubefix import YouTube
-from flask import Flask, render_template, request, send_from_directory, url_for
+from flask import Flask, render_template, request, send_from_directory, url_for, jsonify
 import sqlite3
 import os
 import threading
@@ -26,8 +26,8 @@ def index():
         cur.execute('SELECT * FROM videos ORDER BY channel ASC')
        
         res = cur.fetchall()
-        print(res)
-        
+       
+    con.close()
     return render_template('index.html', db_vids=res)
 
 
@@ -88,6 +88,7 @@ def download_vid():
         download_date = datetime.now()
         download_date = download_date.strftime('%d-%b-%y')
         file_size_bytes = os.path.getsize(file_path)
+        
         if file_size_bytes < 1000000000 :
             size = str(round(file_size_bytes / (1024 * 1024))) + "MB"
         else:
@@ -144,7 +145,8 @@ def player(video_id):
     cur = con.cursor()
     cur.execute("SELECT file_path, title, channel, category, progress FROM videos WHERE video_id = ?", (video_id,))
     res = cur.fetchone()
-
+    cur.execute("SELECT * FROM bookmarks WHERE video_id = ? ORDER BY bookmark_time ASC", (video_id,))
+    bookmark_res = cur.fetchall()
 
     con.close()
     
@@ -173,7 +175,8 @@ def player(video_id):
                          title=res['title'],
                          channel=res['channel'],
                          video_id = video_id,
-                         video_pos = video_position)
+                         video_pos = video_position,
+                         bookmarks = bookmark_res)
 
 @app.route("/save_progress/<video_id>", methods=['POST'])
 def save_progress(video_id):
@@ -185,6 +188,7 @@ def save_progress(video_id):
     cur = con.cursor()
     cur.execute("UPDATE videos SET progress = ? WHERE video_id = ?", (progress, video_id))
     con.commit()
+    con.close()
     return "saved"
 
 
@@ -200,7 +204,34 @@ def save_bookmark(video_id):
     cur = con.cursor()
     cur.execute("INSERT INTO bookmarks (video_id, bookmark_time, name, timestamp) VALUES (?,?,?,?)",(vid, bookmark_time,bookmark_name, datetime.now() ))
     con.commit()
+    con.close()
     return "saved bookmark"
+
+@app.route("/delete_bookmark/<video_id>", methods=['POST'])
+def delete_bookmark(video_id):
+    data = request.get_json()
+    bookmark_timestamp = data['timestamp']
+   
+    vid = video_id
+    print("deleting_bookmark")
+    con = sqlite3.connect('database.db')
+    con.row_factory = sqlite3.Row
+    cur = con.cursor()
+    cur.execute("DELETE FROM bookmarks WHERE video_id = ? AND timestamp = ?",(vid,bookmark_timestamp))
+    con.commit()
+    con.close()
+    return "deleted bookmark"
+
+@app.route("/get_bookmarks/<video_id>", methods=['GET'])
+def get_bookmarks(video_id):
+    con = sqlite3.connect('database.db')
+    con.row_factory = sqlite3.Row
+    cur = con.cursor()
+    cur.execute("SELECT * FROM bookmarks WHERE video_id = ? ORDER BY bookmark_time ASC", (video_id,))
+    results = cur.fetchall()
+    con.close()
+    return jsonify([dict(row) for row in results])
+
 
 def on_complete(stream, file_path):
     global current_title
